@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import * as d3 from "d3";
 
-const random = d3.randomNormal(20, 80);
+const random = d3.randomNormal(0, 1);
 
 const Nodes3 = () => {
   const [dataset, setDataset] = useState(
@@ -13,11 +13,19 @@ const Nodes3 = () => {
   useEffect(() => {
     if (!ref.current) return;
 
-    const svg = d3.select(ref.current);
+    const svg = d3.select(ref.current).style("cursor", "crosshair");
     const width = window.innerWidth;
     const height = window.innerHeight;
 
     svg.attr("width", width).attr("height", height);
+
+    //svg.attr("viewBox", [0, 0, width, height]);
+
+    svg
+      .append("defs")
+      .append("style")
+
+      .text(`circle.highlighted { stroke: orangered; fill: orangered; }`);
 
     svg.selectAll("g").remove();
     const g = svg.append("g");
@@ -35,8 +43,8 @@ const Nodes3 = () => {
       .selectAll("circle")
       .data(dataset)
       .join("circle")
-      .attr("cx", (d) => d[0])
-      .attr("cy", (d) => d[1])
+      .attr("cx", (d) => x(d[0]))
+      .attr("cy", (d) => y(d[1]))
       .attr("fill", "#bfc9ca")
       .attr("r", 1);
 
@@ -45,7 +53,8 @@ const Nodes3 = () => {
     const zoom = d3.zoom().on("zoom", zoomed);
 
     function zoomed(event: any) {
-      g.attr("transform", event.transform);
+      g.attr("transform", (transform = event.transform));
+      //points.attr("transform", event.transform);
     }
 
     svg
@@ -54,6 +63,7 @@ const Nodes3 = () => {
       .on("pointermove", (event) => {
         const p = transform.invert(d3.pointer(event));
         const i = delaunay.find(...p);
+        //console.log(i);
         points.classed("highlighted", (_, j) => i === j);
         d3.select(points.nodes()[i]).raise();
       })
