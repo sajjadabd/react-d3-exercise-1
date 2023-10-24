@@ -7,7 +7,7 @@ const Nodes3 = () => {
   const counter = useRef(null);
 
   const [dataset, setDataset] = useState(
-    Array.from({ length: 20000 }, () => [random(), random()])
+    Array.from({ length: 1_000 }, () => [random(), random()])
   );
 
   const ref = useRef<SVGSVGElement | null>(null);
@@ -30,8 +30,8 @@ const Nodes3 = () => {
     svg.selectAll("g").remove();
     const g = svg.append("g");
 
-    const x = d3.scaleLinear([0, 1], [0, 1000]);
-    const y = d3.scaleLinear([0, 1], [0, 1000]);
+    const x = d3.scaleLinear([0, 1], [0, 1_000]);
+    const y = d3.scaleLinear([0, 1], [0, 1_000]);
 
     const delaunay = d3.Delaunay.from(
       dataset,
@@ -46,16 +46,36 @@ const Nodes3 = () => {
       .attr("cx", (d) => x(d[0]))
       .attr("cy", (d) => y(d[1]))
       .attr("fill", "#bfc9ca")
-      .attr("r", 3);
+      .attr("r", 5);
+
+    // Add a zoom threshold value
+    const zoomThreshold = 0.5; // Adjust this value as needed
+
+    // Create a new selection for text elements
+    const textElements = g
+      .selectAll("text")
+      .data(dataset)
+      .join("text")
+      .attr("x", (d) => x(d[0]))
+      .attr("y", (d) => y(d[1]) + 2) // Adjust the vertical position to be inside the circle
+      .attr("text-anchor", "middle")
+      .attr("font-size", "5px") // Set the font size
+      .attr("fill", "black") // Set the text color
+      .text((d, i) =>
+        d3.zoomTransform(svg.node() as Element).k > zoomThreshold ? i : ""
+      );
 
     let transform = d3.zoomIdentity;
 
     const zoom = d3.zoom().on("zoom", zoomed);
 
     function zoomed(event: any) {
-      console.log(event.transform.k);
+      //console.log(event.transform);
       g.attr("transform", (transform = event.transform));
       //points.attr("transform", event.transform);
+
+      // Update the visibility of text elements based on zoom level
+      textElements.text((d, i) => (event.transform.k > zoomThreshold ? i : ""));
     }
 
     svg
@@ -66,7 +86,7 @@ const Nodes3 = () => {
         const i = delaunay.find(...p);
         //console.log(dataset[i]);
         points.classed("highlighted", (_, j) => i === j);
-        d3.select(points.nodes()[i]).raise();
+        //d3.select(points.nodes()[i]).raise();
       })
       .node();
   }, [dataset]);
